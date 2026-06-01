@@ -95,3 +95,25 @@ describe("aggregate — engagement histogram", () => {
     expect(top!.maxMin).toBeNull();
   });
 });
+
+describe("aggregate — retention curve + peak concurrent", () => {
+  it("computes a retention curve (% of attendees still watching at minute T)", () => {
+    const days = [{ sources: [processedSource(DAY1_MAIN_CSV, "Main Room")] }];
+    const stats = aggregate({ title: "Event", thresholds: [], days });
+    expect(stats.retention).toBeDefined();
+    expect(stats.retention!.length).toBeGreaterThan(0);
+    expect(stats.retention![0].tMinutes).toBe(0);
+    expect(stats.retention![0].pctRemaining).toBe(100);
+    for (let i = 1; i < stats.retention!.length; i++) {
+      expect(stats.retention![i].pctRemaining).toBeLessThanOrEqual(stats.retention![i - 1].pctRemaining);
+    }
+  });
+
+  it("computes peak concurrent viewers with the timestamp", () => {
+    const days = [{ sources: [processedSource(DAY1_MAIN_CSV, "Main Room")] }];
+    const stats = aggregate({ title: "Event", thresholds: [], days });
+    expect(stats.peak).toBeDefined();
+    expect(stats.peak!.count).toBe(2);
+    expect(stats.peak!.at).toMatch(/^\d{2}:\d{2}$/);
+  });
+});

@@ -7,7 +7,7 @@ import type {
   ThresholdStat,
   PerDayStat,
 } from "./types";
-import { combineAttendees } from "./processor";
+import { combineAttendees, parseDateTime } from "./processor";
 
 export interface AggregateInput {
   title: string;
@@ -168,9 +168,63 @@ export function aggregate(input: AggregateInput): AggregateStats {
     thresholds,
     perDay,
     histogram: buildHistogram(combined),
-    retention: undefined,
-    peak: undefined,
+    retention: buildRetention(combined),
+    peak: buildPeak(combined),
   };
+}
+
+interface Interval { start: number; end: number; }
+
+function intervalsOf(rows: AttendeeRow[]): Interval[] {
+  const intervals: Interval[] = [];
+  for (const r of rows) {
+    const s = parseDateTime(r.joinTime);
+    const e = parseDateTime(r.leaveTime);
+    if (s && e && e.getTime() >= s.getTime()) {
+      intervals.push({ start: s.getTime(), end: e.getTime() });
+    }
+  }
+  return intervals;
+}
+
+function buildRetention(rows: AttendeeRow[]) {
+  const intervals = intervalsOf(rows);
+  if (intervals.length === 0) return undefined;
+  const earliestStart = Math.min(...intervals.map((i) => i.start));
+  const latestEnd = Math.max(...intervals.map((i) => i.end));
+  const totalMs = latestEnd - earliestStart;
+  if (totalMs <= 0) return undefined;
+  const totalMinutes = totalMs / 60000;
+
+  const STEP = totalMinutes > 240 ? 10 : totalMinutes > 60 ? 5 : 1;
+  const points = [];
+  for (let t = 0; t <= totalMinutes; t += STEP) {
+    const tMs = earliestStart + t * 60000;
+    const stillIn = intervals.filter((iv) => iv.start <= tMs && tMs < iv.end).length;
+    const pct = round1((stillIn / rows.length) * 100);
+    points.push({ tMinutes: Math.round(t), pctRemaining: pct });
+  }
+  return points;
+}
+
+function buildPeak(rows: AttendeeRow[]) {
+  const intervals = intervalsOf(rows);
+  if (intervals.length === 0) return undefined;
+  const events: { t: number; delta: number }[] = [];
+  for (const iv of intervals) {
+    events.push({ t: iv.start, delta: +1 });
+    events.push({ t: iv.end,   delta: -1 });
+  }
+  events.sort((a, b) => a.t - b.t || a.delta - b.delta);
+  let cur = 0, peak = 0, peakAt = events[0].t;
+  for (const e of events) {
+    cur += e.delta;
+    if (cur > peak) { peak = cur; peakAt = e.t; }
+  }
+  const d = new Date(peakAt);
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return { count: peak, at: `${hh}:${mm}` };
 }
 
 /** Used by xlsx.ts to recompute filtered country counts per threshold sheet. */

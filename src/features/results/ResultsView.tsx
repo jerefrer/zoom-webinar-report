@@ -3,6 +3,13 @@ import { Button } from "@/components/ui/button";
 import { strings } from "@/constants/strings";
 import type { AggregateStats } from "@/types/report";
 import { TopLineStats } from "./TopLineStats";
+import { CountriesPanel } from "./CountriesPanel";
+import { ThresholdsPanel } from "./ThresholdsPanel";
+import { PerDayChart } from "./PerDayChart";
+import { EngagementHistogram } from "./EngagementHistogram";
+import { RetentionCurve } from "./RetentionCurve";
+import { PeakConcurrentBadge } from "./PeakConcurrentBadge";
+import { RoomStatsTable } from "./RoomStatsTable";
 
 interface Props {
   stats: AggregateStats;
@@ -13,6 +20,7 @@ interface Props {
 }
 
 export function ResultsView({ stats, readOnly, onStartOver, onDownload, onShare }: Props) {
+  const multiDay = (stats.perDay?.length ?? 0) > 1;
   return (
     <Card className="mx-auto max-w-5xl rounded-2xl border border-border/70 bg-card p-6 shadow-xl shadow-primary/8 sm:p-10">
       <header className="mb-6 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
@@ -30,11 +38,29 @@ export function ResultsView({ stats, readOnly, onStartOver, onDownload, onShare 
         )}
       </header>
 
-      <section className="mb-6">
-        <TopLineStats topLine={stats.topLine} />
+      <section className="mb-6"><TopLineStats topLine={stats.topLine} /></section>
+
+      <section className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {multiDay && <PerDayChart perDay={stats.perDay!} />}
+        <CountriesPanel countries={stats.countries} />
       </section>
 
-      {/* Panels added in Tasks 19–24, composition wired in Task 25 */}
+      <section className="mb-6">
+        <ThresholdsPanel thresholds={stats.thresholds} />
+      </section>
+
+      <section className="mb-6">
+        <EngagementHistogram histogram={stats.histogram} />
+      </section>
+
+      <section className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2"><RetentionCurve retention={stats.retention} /></div>
+        <PeakConcurrentBadge peak={stats.peak} />
+      </section>
+
+      <section className="mb-2">
+        <RoomStatsTable rooms={stats.rooms} />
+      </section>
 
       <footer className="mt-8 flex justify-center">
         {readOnly ? (

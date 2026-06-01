@@ -87,7 +87,7 @@ export function parseZoomCsv(text: string): ParsedReport {
     }
 
     if (SECTION_MARKERS.has(first)) {
-      currentSection = first as typeof currentSection;
+      currentSection = first as unknown as typeof currentSection;
       currentHeaders = null;
       let j = i + 1;
       while (j < rows.length && isEmptyRow(rows[j])) j++;

@@ -88,7 +88,7 @@ function assignConcurrentSubKeys(
       }
       if (bestIdx >= 0) {
         chains[bestIdx].idx.push(idx);
-        if (leave && (!chains[bestIdx].lastLeave || leave > chains[bestIdx].lastLeave)) {
+        if (leave && (!chains[bestIdx].lastLeave || leave > chains[bestIdx].lastLeave!)) {
           chains[bestIdx].lastLeave = leave;
         }
       } else {

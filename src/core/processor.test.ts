@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parseZoomCsv } from "./parser";
-import { deduplicate } from "./processor";
+import { deduplicate, combineAttendees } from "./processor";
 import { DAY1_MAIN_CSV } from "./__fixtures__/sample-csvs";
 
 describe("deduplicate", () => {
@@ -73,3 +73,30 @@ function makeRow(p: Partial<import("./types").AttendeeRow>) {
     ...p,
   };
 }
+
+describe("combineAttendees", () => {
+  it("merges across sources by email, keeps name-only rows separate", () => {
+    const a = [
+      { name: "Alice", email: "alice@example.com", joinTime: "", leaveTime: "",
+        durationMinutes: 40, isGuest: "Yes", country: "France" },
+      { name: "iPhone", email: "", joinTime: "", leaveTime: "",
+        durationMinutes: 20, isGuest: "Yes", country: "" },
+    ];
+    const b = [
+      { name: "Alice", email: "alice@example.com", joinTime: "", leaveTime: "",
+        durationMinutes: 30, isGuest: "Yes", country: "France" },
+      { name: "iPhone", email: "", joinTime: "", leaveTime: "",
+        durationMinutes: 25, isGuest: "Yes", country: "" },
+    ];
+    const combined = combineAttendees([a, b]);
+    const alice = combined.find((r) => r.email === "alice@example.com");
+    expect(alice).toBeDefined();
+    expect(alice!.durationMinutes).toBe(70);
+    const iphones = combined.filter((r) => r.email === "" && r.name === "iPhone");
+    expect(iphones).toHaveLength(2);
+  });
+
+  it("returns an empty array when all sources are empty", () => {
+    expect(combineAttendees([[], []])).toEqual([]);
+  });
+});

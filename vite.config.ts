@@ -4,6 +4,7 @@ import tailwindcss from "@tailwindcss/vite";
 import path from "node:path";
 
 export default defineConfig({
+  base: process.env.NODE_ENV === "production" ? "/zoom-webinar-report/" : "/",
   plugins: [react() as never, tailwindcss() as never],
   resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
   build: {

@@ -47,6 +47,55 @@ function countryCountsFrom(rows: AttendeeRow[]): CountryStat[] {
   }));
 }
 
+function avgMinutes(rows: AttendeeRow[]): number {
+  if (rows.length === 0) return 0;
+  const sum = rows.reduce((s, r) => s + r.durationMinutes, 0);
+  return round1(sum / rows.length);
+}
+
+function medianMinutes(rows: AttendeeRow[]): number {
+  if (rows.length === 0) return 0;
+  const sorted = [...rows].map((r) => r.durationMinutes).sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? round1(sorted[mid]) : round1((sorted[mid - 1] + sorted[mid]) / 2);
+}
+
+function maxMinutes(rows: AttendeeRow[]): number {
+  let m = 0;
+  for (const r of rows) if (r.durationMinutes > m) m = r.durationMinutes;
+  return m;
+}
+
+const HISTOGRAM_BUCKETS: Array<{ label: string; min: number; max: number | null }> = [
+  { label: "0–15",   min: 0,   max: 15 },
+  { label: "15–30",  min: 15,  max: 30 },
+  { label: "30–60",  min: 30,  max: 60 },
+  { label: "60–90",  min: 60,  max: 90 },
+  { label: "90–120", min: 90,  max: 120 },
+  { label: "120+",   min: 120, max: null },
+];
+
+function buildHistogram(rows: AttendeeRow[]) {
+  const buckets = HISTOGRAM_BUCKETS.map((b) => ({
+    label: b.label,
+    minMin: b.min,
+    maxMin: b.max,
+    count: 0,
+  }));
+  for (const r of rows) {
+    const d = r.durationMinutes;
+    for (const b of buckets) {
+      if (b.maxMin === null) {
+        if (d >= b.minMin) { b.count++; break; }
+      } else if (d >= b.minMin && d < b.maxMin) {
+        b.count++;
+        break;
+      }
+    }
+  }
+  return buckets;
+}
+
 export function aggregate(input: AggregateInput): AggregateStats {
   const numDays = input.days.length;
   const allSources = input.days.flatMap((d) => d.sources);
@@ -111,14 +160,14 @@ export function aggregate(input: AggregateInput): AggregateStats {
     topLine: {
       unique: combined.length,
       countries: countries.length,
-      avg: 0,       // filled in Task 11
-      median: 0,    // filled in Task 11
-      max: 0,       // filled in Task 11
+      avg: avgMinutes(combined),
+      median: medianMinutes(combined),
+      max: maxMinutes(combined),
     },
     countries,
     thresholds,
     perDay,
-    histogram: [],  // filled in Task 11
+    histogram: buildHistogram(combined),
     retention: undefined,
     peak: undefined,
   };

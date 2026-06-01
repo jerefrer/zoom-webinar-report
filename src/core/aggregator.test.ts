@@ -59,3 +59,39 @@ describe("aggregate — XLSX-parity", () => {
     expect(stats.rooms[1].roomLabel).toBe("Chinese Room");
   });
 });
+
+describe("aggregate — topLine viewing-time stats", () => {
+  it("computes avg/median/max in minutes from the combined deduped attendees", () => {
+    const days = [{ sources: [processedSource(DAY1_MAIN_CSV, "Main Room")] }];
+    const stats = aggregate({ title: "Event", thresholds: [], days });
+    // Alice 85m, Bob 100m → avg 92.5, median 92.5, max 100
+    expect(stats.topLine.avg).toBe(92.5);
+    expect(stats.topLine.median).toBe(92.5);
+    expect(stats.topLine.max).toBe(100);
+  });
+
+  it("avg/median/max are zero on empty input", () => {
+    const stats = aggregate({ title: "Empty", thresholds: [], days: [] });
+    expect(stats.topLine.avg).toBe(0);
+    expect(stats.topLine.median).toBe(0);
+    expect(stats.topLine.max).toBe(0);
+  });
+});
+
+describe("aggregate — engagement histogram", () => {
+  it("places Alice (85m) in 60–90, Bob (100m) in 90–120", () => {
+    const days = [{ sources: [processedSource(DAY1_MAIN_CSV, "Main Room")] }];
+    const stats = aggregate({ title: "Event", thresholds: [], days });
+    const get = (label: string) => stats.histogram.find((b) => b.label === label);
+    expect(get("60–90")!.count).toBe(1);
+    expect(get("90–120")!.count).toBe(1);
+    expect(get("0–15")!.count).toBe(0);
+  });
+
+  it("includes 120+ as the open-ended top bucket", () => {
+    const stats = aggregate({ title: "Event", thresholds: [], days: [] });
+    const top = stats.histogram.find((b) => b.label === "120+");
+    expect(top).toBeDefined();
+    expect(top!.maxMin).toBeNull();
+  });
+});

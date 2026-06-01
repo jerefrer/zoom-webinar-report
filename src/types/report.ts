@@ -1,8 +1,26 @@
-export type FileStatus = "ok" | "invalid";
+// Re-exports so feature components import "@/types/report" rather than
+// reaching into core/. Keeps the layering boundary explicit.
+export type {
+  AttendeeRow,
+  ParsedMeta,
+  ParsedReport,
+  ProcessedSource,
+  ProcessedDay,
+  CountryStat,
+  ThresholdStat,
+  HistogramBucket,
+  RetentionPoint,
+  PerDayStat,
+  RoomStatRow,
+  AggregateStats,
+  ShareableReport,
+} from "@/core/types";
+
+export type WizardStep = "upload" | "grouping" | "options" | "results";
 
 export interface InspectResult {
   filename: string;
-  status: FileStatus;
+  status: "ok" | "invalid";
   detected_date: string | null;
   topic: string | null;
   webinar_id: string | null;
@@ -10,19 +28,7 @@ export interface InspectResult {
   error: string | null;
 }
 
-export interface InspectResponse {
-  files: InspectResult[];
-}
-
 export interface Grouping {
   days: string[][];
   unassigned: string[];
 }
-
-export interface GenerateConfig {
-  topic: string;
-  thresholds: number[];
-  days: { filenames: string[] }[];
-}
-
-export type WizardStep = "upload" | "grouping" | "options" | "generate";

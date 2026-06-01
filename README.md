@@ -1,73 +1,55 @@
-# React + TypeScript + Vite
+# Zoom Webinar Report
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Free in-browser tool that turns Zoom attendee CSV reports into clean XLSX reports
+with deduplicated rejoins, multi-day & multi-room support, country breakdowns,
+and engagement insights.
 
-Currently, two official plugins are available:
+**Your data never leaves your browser.** No upload, no database, no logging.
+The optional share link contains only aggregated stats — no emails or names.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+➡️ **Live**: https://jeremyfrere.github.io/zoom-webinar-report/
 
-## React Compiler
+## Features
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- Drag & drop one or more Zoom attendee CSVs
+- Auto-deduplicates rejoins (sums real watch time)
+- Auto-groups by event date, editable
+- Generates a formatted XLSX (Summary / Countries / UbC / UbC_Nmin)
+- Rich in-app dashboard: KPI cards, country breakdown, per-day chart,
+  engagement histogram, retention curve, peak concurrent viewers
+- Shareable URL with aggregated stats only (RGPD-clean)
 
-## Expanding the ESLint configuration
+## Development
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev          # local dev server (Vite)
+npm test             # Vitest
+npm run build        # build to dist/
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Tech: React 19 + TypeScript + Tailwind v4 + shadcn/ui + Recharts + SheetJS +
+PapaParse + lz-string. Tests with Vitest + RTL.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Deployment
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+`git push` to `main`. The GitHub Actions workflow at `.github/workflows/deploy.yml`
+builds and publishes to the `gh-pages` branch. GitHub Pages serves from that
+branch at the repo's Pages URL.
+
+## RGPD posture
+
+All Zoom CSV processing — parsing, deduplication, aggregation, XLSX generation —
+runs in the user's browser. Only static assets (HTML, JS, CSS) are loaded from
+GitHub Pages. The optional share link encodes only aggregated stats (country
+counts, threshold counts, histogram buckets) in the URL hash fragment, which is
+never transmitted to any server.
+
+## License
+
+MIT — see [LICENSE](./LICENSE).
+
+## Disclaimer
+
+Independent project. Not affiliated with or endorsed by Zoom Video
+Communications, Inc. Zoom® is a trademark of Zoom Video Communications, Inc.

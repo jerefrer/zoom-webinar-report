@@ -1,8 +1,12 @@
 {
   "name": "zoom-webinar-report",
-  "private": true,
-  "version": "0.0.0",
+  "private": false,
+  "version": "0.1.0",
   "type": "module",
+  "description": "Free in-browser tool for deduplicated Zoom attendee reports. Multi-day, multi-room, country breakdowns, engagement insights — all client-side, RGPD-friendly.",
+  "license": "MIT",
+  "homepage": "https://github.com/jeremyfrere/zoom-webinar-report",
+  "repository": { "type": "git", "url": "git+https://github.com/jeremyfrere/zoom-webinar-report.git" },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

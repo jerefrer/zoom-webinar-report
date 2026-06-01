@@ -1,4 +1,153 @@
 <!doctype html>
-<html lang="en"><head><meta charset="UTF-8" /><title>Zoom Webinar Report — placeholder</title></head>
-<body><p>Landing page comes in Task 29. Try the app at <a href="/app/">/app/</a>.</p></body>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Zoom Webinar Report — Free deduplicated attendee analytics</title>
+  <meta name="description" content="Free in-browser tool that turns Zoom attendee CSV reports into clean XLSX reports with deduplicated rejoins, multi-day &amp; multi-room support, country breakdowns, and engagement insights. Your data never leaves your browser. RGPD-friendly." />
+  <meta name="keywords" content="Zoom attendee report, Zoom webinar report, Zoom attendance report, deduplicate Zoom attendees, multi-day Zoom webinar, Zoom CSV tool, free Zoom analytics, RGPD" />
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+  <meta property="og:title" content="Zoom Webinar Report" />
+  <meta property="og:description" content="Free in-browser tool for deduplicated Zoom attendee reports. Multi-day, multi-room, country breakdowns. Your data never leaves your browser." />
+  <meta property="og:image" content="./og-image.png" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Zoom Webinar Report",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Web",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "description": "Free in-browser tool that turns Zoom attendee CSVs into deduplicated XLSX reports with country breakdowns and engagement insights."
+  }
+  </script>
+  <style>
+    :root {
+      --primary: #0B5CFF;
+      --foreground: #0F172A;
+      --muted-foreground: #64748B;
+      --border: #E2E8F0;
+      --background: #FFFFFF;
+      --muted: #F8FAFC;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      color: var(--foreground);
+      background: var(--background);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    .container { max-width: 64rem; margin: 0 auto; padding: 0 1.25rem; }
+    .hero { padding: 5rem 0 4rem; text-align: center;
+            background: linear-gradient(to bottom, rgba(11,92,255,0.06), rgba(11,92,255,0.02) 60%, transparent); }
+    .hero .brand { display: inline-flex; align-items: center; justify-content: center;
+                   width: 3rem; height: 3rem; background: var(--primary); border-radius: 1rem;
+                   margin-bottom: 1.25rem; box-shadow: 0 10px 25px rgba(11,92,255,0.25); }
+    .hero .brand span { display: block; width: 0.75rem; height: 0.75rem; background: rgba(255,255,255,0.95);
+                        border-radius: 9999px; box-shadow: 0 0 0 4px rgba(255,255,255,0.25); }
+    .hero h1 { font-size: clamp(2.25rem, 5vw, 3.5rem); margin: 0 0 1rem; font-weight: 600; letter-spacing: -0.02em; }
+    .hero h1 .brand-word { color: var(--primary); }
+    .hero p.sub { color: var(--muted-foreground); font-size: 1.125rem; margin: 0 auto 2rem; max-width: 36rem; }
+    .cta { display: inline-block; background: var(--primary); color: white; padding: 0.875rem 1.75rem;
+           border-radius: 0.75rem; text-decoration: none; font-weight: 600; }
+    .section { padding: 4rem 0; }
+    .section.alt { background: var(--muted); }
+    .grid-3 { display: grid; grid-template-columns: 1fr; gap: 1.25rem; }
+    @media (min-width: 700px) { .grid-3 { grid-template-columns: repeat(3, 1fr); } }
+    .card { background: white; border: 1px solid var(--border); border-radius: 1rem; padding: 1.5rem; }
+    .card h3 { margin: 0 0 0.5rem; font-size: 1.125rem; }
+    .card p { margin: 0; color: var(--muted-foreground); font-size: 0.95rem; }
+    .faq dt { font-weight: 600; margin-top: 1.25rem; }
+    .faq dd { margin: 0.25rem 0 0; color: var(--muted-foreground); }
+    footer { border-top: 1px solid var(--border); padding: 2rem 0; text-align: center; color: var(--muted-foreground); font-size: 0.875rem; }
+    img.screenshot { width: 100%; border-radius: 0.875rem; border: 1px solid var(--border); box-shadow: 0 20px 40px rgba(15,23,42,0.08); }
+  </style>
+</head>
+<body>
+  <section class="hero">
+    <div class="container">
+      <div class="brand" aria-hidden="true"><span></span></div>
+      <h1><span class="brand-word">Zoom</span> Webinar Report</h1>
+      <p class="sub">Free in-browser tool for deduplicated attendee reports. Multi-day, multi-room, country breakdowns — your data never leaves your browser.</p>
+      <a class="cta" href="./app/">Try it now →</a>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <h2 style="text-align:center;margin:0 0 2rem">Why this exists</h2>
+      <div class="grid-3">
+        <div class="card">
+          <h3>Deduplicates rejoins</h3>
+          <p>Zoom's CSV lists every join/leave as a separate row. Drop your CSV — we collapse rejoins by email and time intervals, summing real watch time.</p>
+        </div>
+        <div class="card">
+          <h3>Multi-day &amp; multi-room</h3>
+          <p>Combine sessions across multiple days and parallel rooms (e.g., Main + interpretation). The XLSX shows per-day columns and a single combined view.</p>
+        </div>
+        <div class="card">
+          <h3>RGPD-friendly</h3>
+          <p>Nothing leaves your browser. No upload, no database, no logging. The optional share link contains only aggregated stats — no emails or names.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section alt">
+    <div class="container">
+      <h2 style="text-align:center;margin:0 0 2rem">What you get</h2>
+      <img class="screenshot" src="./screenshots/dashboard.png" alt="Dashboard preview showing KPI cards, per-day chart, country breakdown, engagement histogram, and retention curve." loading="lazy" />
+      <ul style="max-width:48rem;margin:2rem auto 0;color:var(--muted-foreground);font-size:0.95rem;line-height:1.7">
+        <li>Formatted XLSX with Summary, Countries, and Users-by-Country sheets (with custom viewing-time thresholds)</li>
+        <li>In-app dashboard: unique attendees, country breakdown, per-day attendance, engagement time histogram, retention curve, peak concurrent viewers</li>
+        <li>Shareable link encoding only aggregated stats — never any personal data</li>
+        <li>Drag-and-drop, multi-file, auto-grouped by date</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <h2 style="text-align:center;margin:0 0 2rem">How it works</h2>
+      <div class="grid-3">
+        <div class="card"><h3>1. Drop CSVs</h3><p>Export your Zoom attendee reports and drop them in. Multiple files = multiple sources or multiple days.</p></div>
+        <div class="card"><h3>2. Review grouping</h3><p>Files are auto-grouped by date. Drag any file to a different day to fix the grouping.</p></div>
+        <div class="card"><h3>3. Get your report</h3><p>Set the event title and viewing-time thresholds. View the dashboard, download the XLSX, or share a link.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section alt">
+    <div class="container faq">
+      <h2 style="text-align:center;margin:0 0 2rem">Questions</h2>
+      <dl>
+        <dt>Does my data ever leave my browser?</dt>
+        <dd>No. The CSV is parsed, deduped, and aggregated entirely in JavaScript on your machine. Only the static page assets are loaded from GitHub Pages.</dd>
+        <dt>Does it need a paid Zoom plan?</dt>
+        <dd>Only the CSV export feature in Zoom is needed (available on most paid plans). No API integration, no OAuth.</dd>
+        <dt>Does it work offline?</dt>
+        <dd>Once the page is loaded, yes — the processing runs locally. You can refresh while offline as long as the browser cached the assets.</dd>
+        <dt>Is the share link safe to send around?</dt>
+        <dd>Yes. The URL fragment contains only aggregated stats (country counts, threshold counts, histogram buckets, etc.) — no emails, names, or individual timestamps.</dd>
+        <dt>What file format does Zoom export?</dt>
+        <dd>The "Attendee Report" CSV from Reports → Usage Reports. UTF-8 with a BOM is supported.</dd>
+        <dt>Does it support multiple interpretation rooms?</dt>
+        <dd>Yes. Drop both the Main and Chinese (or any interpretation) CSVs together — files are auto-ordered Main → Chinese in the report.</dd>
+        <dt>Is the source open?</dt>
+        <dd>Yes — <a href="https://github.com/" target="_blank" rel="noopener">on GitHub</a> (MIT licensed).</dd>
+      </dl>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      <p>Independent project. Not affiliated with or endorsed by Zoom Video Communications, Inc.<br>Zoom® is a trademark of Zoom Video Communications, Inc.</p>
+      <p style="margin-top:0.5rem">Last updated: <time>2026-06-01</time> · <a href="https://github.com/">GitHub</a></p>
+    </div>
+  </footer>
+</body>
 </html>

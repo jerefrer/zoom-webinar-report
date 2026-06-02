@@ -1,7 +1,52 @@
 import { describe, expect, it } from "vitest";
 import { parseZoomCsv } from "./parser";
-import { deduplicate, combineAttendees } from "./processor";
+import { deduplicate, combineAttendees, parseDateTime } from "./processor";
 import { DAY1_MAIN_CSV } from "./__fixtures__/sample-csvs";
+
+describe("parseDateTime", () => {
+  it("parses MM/DD/YYYY hh:mm:ss AM/PM (most common Zoom format)", () => {
+    const d = parseDateTime("05/30/2026 09:00:00 AM");
+    expect(d).not.toBeNull();
+    expect(d!.getHours()).toBe(9);
+    expect(d!.getMinutes()).toBe(0);
+  });
+
+  it("parses MM/DD/YYYY HH:mm:ss (24-hour with seconds)", () => {
+    const d = parseDateTime("05/30/2026 14:35:00");
+    expect(d).not.toBeNull();
+    expect(d!.getHours()).toBe(14);
+  });
+
+  it("parses MM/DD/YYYY hh:mm AM/PM (without seconds — fallback Zoom occasionally emits)", () => {
+    const d = parseDateTime("05/30/2026 2:35 PM");
+    expect(d).not.toBeNull();
+    expect(d!.getHours()).toBe(14);
+    expect(d!.getMinutes()).toBe(35);
+  });
+
+  it("parses MM/DD/YYYY HH:mm (24-hour without seconds)", () => {
+    const d = parseDateTime("05/30/2026 14:35");
+    expect(d).not.toBeNull();
+    expect(d!.getHours()).toBe(14);
+  });
+
+  it("parses HH:mm time-only (used for relative ordering inside a name group)", () => {
+    const d = parseDateTime("09:15");
+    expect(d).not.toBeNull();
+    expect(d!.getHours()).toBe(9);
+    expect(d!.getMinutes()).toBe(15);
+  });
+
+  it("returns null on unknown / empty input", () => {
+    expect(parseDateTime("")).toBeNull();
+    expect(parseDateTime("not a date")).toBeNull();
+  });
+
+  it("handles 12 AM and 12 PM correctly", () => {
+    expect(parseDateTime("01/01/2026 12:00:00 AM")!.getHours()).toBe(0);
+    expect(parseDateTime("01/01/2026 12:00:00 PM")!.getHours()).toBe(12);
+  });
+});
 
 describe("deduplicate", () => {
   it("merges Alice's two sessions by email into one row totaling 85 minutes", () => {

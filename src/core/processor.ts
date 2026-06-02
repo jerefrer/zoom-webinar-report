@@ -1,32 +1,60 @@
 import type { AttendeeRow } from "./types";
 
-const DT_FORMATS = [
-  /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})\s+(AM|PM)$/i,
-  /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})$/,
-  /^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2}):(\d{2})$/,
-];
+// Match Python v1's `_DT_FMTS` set — six formats. The narrower 3-format
+// version we shipped initially missed AM/PM-without-seconds and 24h-without-
+// seconds, which Zoom occasionally emits. A missed parse causes the row to
+// fall into a generic "chain 0" bucket during dedup, which can affect counts.
+const RX_MDY_HMS_AP = /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})\s+(AM|PM)$/i;
+const RX_MDY_HMS    = /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})$/;
+const RX_YMD_HMS    = /^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2}):(\d{2})$/;
+const RX_MDY_HM_AP  = /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})\s+(AM|PM)$/i;
+const RX_MDY_HM     = /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})$/;
+const RX_HM         = /^(\d{1,2}):(\d{2})$/;
+
+function applyMeridiem(hour: number, ap: string): number {
+  const upper = ap.toUpperCase();
+  if (upper === "PM" && hour < 12) return hour + 12;
+  if (upper === "AM" && hour === 12) return 0;
+  return hour;
+}
 
 export function parseDateTime(s: string): Date | null {
   if (!s) return null;
   const trimmed = s.trim();
-  let m = trimmed.match(DT_FORMATS[0]);
+
+  let m = trimmed.match(RX_MDY_HMS_AP);
   if (m) {
-    let hour = Number(m[4]);
-    const ap = m[7].toUpperCase();
-    if (ap === "PM" && hour < 12) hour += 12;
-    if (ap === "AM" && hour === 12) hour = 0;
+    const hour = applyMeridiem(Number(m[4]), m[7]);
     return new Date(Number(m[3]), Number(m[1]) - 1, Number(m[2]),
                     hour, Number(m[5]), Number(m[6]));
   }
-  m = trimmed.match(DT_FORMATS[1]);
+  m = trimmed.match(RX_MDY_HMS);
   if (m) {
     return new Date(Number(m[3]), Number(m[1]) - 1, Number(m[2]),
                     Number(m[4]), Number(m[5]), Number(m[6]));
   }
-  m = trimmed.match(DT_FORMATS[2]);
+  m = trimmed.match(RX_YMD_HMS);
   if (m) {
     return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]),
                     Number(m[4]), Number(m[5]), Number(m[6]));
+  }
+  m = trimmed.match(RX_MDY_HM_AP);
+  if (m) {
+    const hour = applyMeridiem(Number(m[4]), m[6]);
+    return new Date(Number(m[3]), Number(m[1]) - 1, Number(m[2]),
+                    hour, Number(m[5]), 0);
+  }
+  m = trimmed.match(RX_MDY_HM);
+  if (m) {
+    return new Date(Number(m[3]), Number(m[1]) - 1, Number(m[2]),
+                    Number(m[4]), Number(m[5]), 0);
+  }
+  m = trimmed.match(RX_HM);
+  if (m) {
+    // Time-only — no date context; use 1970-01-01 as anchor. Used only for
+    // relative ordering within a name-group, where the absolute date doesn't
+    // matter as long as all rows are parsed the same way.
+    return new Date(1970, 0, 1, Number(m[1]), Number(m[2]), 0);
   }
   return null;
 }

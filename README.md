@@ -7,7 +7,7 @@ and engagement insights.
 **Your data never leaves your browser.** No upload, no database, no logging.
 The optional share link contains only aggregated stats — no emails or names.
 
-➡️ **Live**: https://jeremyfrere.github.io/zoom-webinar-report/
+➡️ **Live**: https://jerefrer.github.io/zoom-webinar-report/
 
 ## Features
 

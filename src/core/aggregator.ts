@@ -8,6 +8,7 @@ import type {
   PerDayStat,
 } from "./types";
 import { combineAttendees, parseDateTime } from "./processor";
+import { extractFullDate as extractFullDateOrNull } from "@/lib/dates";
 
 export interface AggregateInput {
   title: string;
@@ -19,17 +20,10 @@ function round1(n: number): number {
   return Math.round(n * 10) / 10;
 }
 
+/** Aggregator local wrapper: empty string on miss (existing call sites already
+ *  fall back to `|| ""`, so this keeps the call sites untouched). */
 function extractFullDate(rawStartTime: string): string {
-  if (!rawStartTime) return "";
-  let m = rawStartTime.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})/);
-  if (m) return `${pad(m[1])}/${pad(m[2])}/${m[3]}`;
-  m = rawStartTime.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-  if (m) return `${pad(m[2])}/${pad(m[1])}/${m[3]}`;
-  return "";
-}
-
-function pad(s: string): string {
-  return s.length === 1 ? `0${s}` : s;
+  return extractFullDateOrNull(rawStartTime) ?? "";
 }
 
 function countryCountsFrom(rows: AttendeeRow[]): CountryStat[] {

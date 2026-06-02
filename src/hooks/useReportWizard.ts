@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import { addDay as addDayFn, groupByDate, moveFile, toGenerateDays } from "@/lib/grouping";
 import type { Bucket } from "@/lib/grouping";
 import { stripChineseSuffix } from "@/lib/title";
+import { extractFullDate } from "@/lib/dates";
 import type { Grouping, InspectResult, WizardStep } from "@/types/report";
 import { parseZoomCsvBuffer } from "@/core/parser";
 
@@ -141,10 +142,3 @@ export async function inspectFilesLocal(files: File[]): Promise<InspectResult[]>
   return results;
 }
 
-function extractFullDate(raw: string): string | null {
-  // "05/12/2026 …" → "12/05/2026"
-  const m = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-  if (!m) return null;
-  const pad = (s: string) => (s.length === 1 ? `0${s}` : s);
-  return `${pad(m[2])}/${pad(m[1])}/${m[3]}`;
-}

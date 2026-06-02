@@ -86,8 +86,13 @@ describe("deduplicate", () => {
   });
 });
 
-describe("deduplicate — name-only collisions (interval scheduling)", () => {
-  it("keeps two concurrent 'iPhone' attendees as separate rows", () => {
+describe("deduplicate — name-only collisions (matches v1 behavior)", () => {
+  // v1 Python's `deduplicate` collapses ALL rows sharing a name (no email)
+  // into a single row regardless of whether their sessions overlap. The
+  // concurrent-row splitting heuristic (`assignConcurrentSubKeys`) is only
+  // used when we have Zoom's unique-users CSV for ground-truth.
+
+  it("merges two concurrent 'iPhone' rows into one (no over-splitting without ground truth)", () => {
     const rows = [
       makeRow({ name: "iPhone", joinTime: "01/01/2026 09:00:00 AM",
                 leaveTime: "01/01/2026 09:30:00 AM", durationMinutes: 30 }),
@@ -95,7 +100,8 @@ describe("deduplicate — name-only collisions (interval scheduling)", () => {
                 leaveTime: "01/01/2026 09:45:00 AM", durationMinutes: 35 }),
     ];
     const deduped = deduplicate(rows);
-    expect(deduped).toHaveLength(2);
+    expect(deduped).toHaveLength(1);
+    expect(deduped[0].durationMinutes).toBe(65);  // sum of both
   });
 
   it("merges two sequential 'iPhone' sessions (rejoin) as one row", () => {

@@ -65,7 +65,14 @@ function dedupKey(row: AttendeeRow): string {
   return email ? email : `__name__${name}`;
 }
 
-function assignConcurrentSubKeys(
+/**
+ * Greedy interval-scheduling for name-only collisions. RESERVED for a future
+ * `applyUniqueUsersOverride` path where Zoom's own unique-users CSV provides
+ * a ground-truth count for each ambiguous name. Without that signal we don't
+ * call this — `deduplicate` collapses concurrent same-name rows into one,
+ * matching v1 Python's default behavior.
+ */
+export function assignConcurrentSubKeys(
   rows: AttendeeRow[],
   initialKeys: string[],
 ): string[] {
@@ -160,12 +167,19 @@ function compareDates(a: string, b: string, prefer: "min" | "max"): string {
 
 export function deduplicate(rows: AttendeeRow[]): AttendeeRow[] {
   if (rows.length === 0) return [];
-  const initialKeys = rows.map(dedupKey);
-  const finalKeys = assignConcurrentSubKeys(rows, initialKeys);
+  // Email-or-name grouping ONLY. Matches v1 Python's `deduplicate`: all rows
+  // with the same name (no email) collapse into one row, even when concurrent.
+  // Concurrent same-name splitting via `assignConcurrentSubKeys` is reserved
+  // for the (not-yet-ported) `apply_unique_users_override` path, where Zoom's
+  // own unique-users count tells us the true person count for that name.
+  // Without that ground-truth signal, the interval-scheduling heuristic
+  // would over-split (an attendee who briefly disconnects and rejoins from
+  // a different device shows up as concurrent and would be counted twice).
+  const keys = rows.map(dedupKey);
 
   const groups = new Map<string, AttendeeRow[]>();
   for (let i = 0; i < rows.length; i++) {
-    const k = finalKeys[i];
+    const k = keys[i];
     const list = groups.get(k) ?? [];
     list.push(rows[i]);
     groups.set(k, list);

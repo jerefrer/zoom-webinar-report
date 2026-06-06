@@ -84,6 +84,30 @@ describe("deduplicate", () => {
     const alice = deduped.find((a) => a.email === "alice@example.com")!;
     expect(alice.country).toBe("France");
   });
+
+  // Parity with pandas `Series.mode().iloc[0]`: when two countries are tied on
+  // frequency, the alphabetically-smallest one wins — NOT the first-encountered.
+  // This matched the v1 Python output for ~4 attendees whose sessions reported
+  // two different countries an equal number of times.
+  it("breaks country ties alphabetically (matches pandas mode), not by row order", () => {
+    const rows = [
+      makeRow({ email: "x@example.com", country: "United States", durationMinutes: 10 }),
+      makeRow({ email: "x@example.com", country: "China", durationMinutes: 10 }),
+    ];
+    const deduped = deduplicate(rows);
+    expect(deduped).toHaveLength(1);
+    expect(deduped[0].country).toBe("China"); // 'China' < 'United States'
+  });
+
+  it("still prefers the strictly more frequent country over the alphabetical one", () => {
+    const rows = [
+      makeRow({ email: "y@example.com", country: "United States", durationMinutes: 10 }),
+      makeRow({ email: "y@example.com", country: "United States", durationMinutes: 10 }),
+      makeRow({ email: "y@example.com", country: "China", durationMinutes: 10 }),
+    ];
+    const deduped = deduplicate(rows);
+    expect(deduped[0].country).toBe("United States"); // 2 > 1, frequency wins
+  });
 });
 
 describe("deduplicate — name-only collisions (matches v1 behavior)", () => {

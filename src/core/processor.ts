@@ -146,7 +146,12 @@ function mode(values: string[]): string {
   let best = "";
   let bestN = 0;
   for (const [v, n] of counts) {
-    if (n > bestN) { best = v; bestN = n; }
+    // Match pandas `Series.mode().iloc[0]`: highest count wins, ties broken by
+    // the alphabetically-smallest value (pandas returns modes sorted ascending).
+    if (n > bestN || (n === bestN && bestN > 0 && v < best)) {
+      best = v;
+      bestN = n;
+    }
   }
   return best;
 }

@@ -1,5 +1,6 @@
 import * as XLSX from "xlsx-js-style";
-import type { AggregateStats, CountryStat } from "./types";
+import type { AggregateStats, AttendeeRow, CountryStat } from "./types";
+import { countriesFilteredBy } from "./aggregator";
 
 const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
@@ -18,9 +19,12 @@ const C = {
 const FONT = "Calibri";
 
 export interface XlsxOptions {
-  /** Per-threshold country breakdowns, keyed by threshold minutes.
-   *  If omitted, the unfiltered country breakdown is used as a fallback. */
-  filteredCountriesByThreshold?: Map<number, CountryStat[]>;
+  /** Combined (deduped across rooms/days) attendee rows. Used to compute the
+   *  per-threshold country breakdowns for each UbC_Nmin sheet so they reflect
+   *  only attendees who met the threshold — matching the v1 Python report.
+   *  When omitted, the UbC_Nmin sheets fall back to the unfiltered country
+   *  list (no threshold applied); always pass this for correct threshold sheets. */
+  combinedAttendees?: AttendeeRow[];
 }
 
 // ─── Style preset helpers ─────────────────────────────────────────────────
@@ -389,7 +393,9 @@ export function buildXlsx(stats: AggregateStats, options: XlsxOptions = {}): Blo
   XLSX.utils.book_append_sheet(wb, buildCountries(stats), "Countries");
   XLSX.utils.book_append_sheet(wb, buildUbC(stats, stats.countries, null), "UbC");
   for (const t of stats.thresholds) {
-    const filtered = options.filteredCountriesByThreshold?.get(t.mins) ?? stats.countries;
+    const filtered = options.combinedAttendees
+      ? countriesFilteredBy(options.combinedAttendees, t.mins)
+      : stats.countries;
     XLSX.utils.book_append_sheet(wb, buildUbC(stats, filtered, t.mins), `UbC_${t.mins}min`);
   }
   const ab = XLSX.write(wb, { type: "array", bookType: "xlsx" }) as ArrayBuffer;

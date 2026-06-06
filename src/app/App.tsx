@@ -10,9 +10,10 @@ import { WizardStepper } from "@/features/wizard/WizardStepper";
 import { ResultsView } from "@/features/results/ResultsView";
 import { parseZoomCsvBuffer } from "@/core/parser";
 import { deduplicate } from "@/core/processor";
-import { aggregate } from "@/core/aggregator";
+import { aggregate, combinedFor } from "@/core/aggregator";
 import { buildXlsx } from "@/core/xlsx";
 import { encodeReport, toShareable } from "@/core/shareUrl";
+import type { AttendeeRow } from "@/core/types";
 import type { AggregateStats, ProcessedSource, ShareableReport } from "@/types/report";
 
 function BrandMark() {
@@ -59,6 +60,7 @@ export default function App() {
   const shared = useSharedReport();
   const w = useReportWizard();
   const [stats, setStats] = useState<AggregateStats | null>(null);
+  const [combined, setCombined] = useState<AttendeeRow[] | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
   const handleFiles = useCallback(async (files: File[]) => {
@@ -88,21 +90,23 @@ export default function App() {
       if (sources.length > 0) days.push({ sources });
     }
     const config = w.buildConfig();
-    const a = aggregate({ title: config.topic, thresholds: config.thresholds, days });
+    const input = { title: config.topic, thresholds: config.thresholds, days };
+    const a = aggregate(input);
     setStats(a);
+    setCombined(combinedFor(input));
     w.goToResults();
   }, [w]);
 
   const handleDownload = useCallback(() => {
     if (!stats) return;
-    const blob = buildXlsx(stats);
+    const blob = buildXlsx(stats, combined ? { combinedAttendees: combined } : {});
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
     a.download = `${(stats.title || "zoom-webinar-report").replace(/[^a-z0-9-_]+/gi, "_")}.xlsx`;
     a.click();
     URL.revokeObjectURL(url);
-  }, [stats]);
+  }, [stats, combined]);
 
   const handleShare = useCallback(async () => {
     if (!stats) return;

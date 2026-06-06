@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { parseZoomCsv } from "./parser";
 import { deduplicate } from "./processor";
-import { aggregate } from "./aggregator";
+import {
+  aggregate,
+  combinedFor,
+  countriesFilteredBy,
+  perDayCombinedFor,
+} from "./aggregator";
 import { DAY1_MAIN_CSV, DAY2_MAIN_CSV } from "./__fixtures__/sample-csvs";
 
 function processedSource(csv: string, roomLabel: string) {
@@ -115,5 +120,66 @@ describe("aggregate — retention curve + peak concurrent", () => {
     expect(stats.peak).toBeDefined();
     expect(stats.peak!.count).toBe(2);
     expect(stats.peak!.at).toMatch(/^\d{2}:\d{2}$/);
+  });
+});
+
+// These exported helpers feed the XLSX builder directly (combinedFor →
+// combinedAttendees, countriesFilteredBy → each UbC_Nmin sheet). They are the
+// engine behind the threshold-sheet fix, so they are tested independently.
+describe("aggregate helpers — combinedFor / countriesFilteredBy / perDayCombinedFor", () => {
+  it("combinedFor merges sources across the whole event by email", () => {
+    const input = {
+      title: "Event",
+      thresholds: [],
+      days: [{
+        sources: [
+          processedSource(DAY1_MAIN_CSV, "Main Room"),
+          processedSource(DAY2_MAIN_CSV, "Chinese Room"),
+        ],
+      }],
+    };
+    const combined = combinedFor(input);
+    // Day1: Alice 85, Bob 100. Day2: Carol 70. Distinct emails → 3 attendees.
+    expect(combined).toHaveLength(3);
+    expect(combined.map((r) => r.durationMinutes).sort((a, b) => a - b)).toEqual([70, 85, 100]);
+  });
+
+  it("countriesFilteredBy keeps only attendees at/above the threshold", () => {
+    const input = { title: "Event", thresholds: [], days: [{ sources: [processedSource(DAY1_MAIN_CSV, "Main Room")] }] };
+    const combined = combinedFor(input);
+
+    const all = countriesFilteredBy(combined, 0);
+    expect(all.reduce((s, c) => s + c.count, 0)).toBe(2); // France + Germany
+
+    const ge90 = countriesFilteredBy(combined, 90);
+    expect(ge90.reduce((s, c) => s + c.count, 0)).toBe(1); // Bob (Germany, 100m)
+    expect(ge90.find((c) => c.name === "France")).toBeUndefined();
+    expect(ge90.find((c) => c.name === "Germany")).toMatchObject({ count: 1 });
+
+    const ge110 = countriesFilteredBy(combined, 110);
+    expect(ge110).toEqual([]); // nobody reaches 110m
+  });
+
+  it("countriesFilteredBy uses '>=' (boundary attendee is included)", () => {
+    const input = { title: "Event", thresholds: [], days: [{ sources: [processedSource(DAY1_MAIN_CSV, "Main Room")] }] };
+    const combined = combinedFor(input);
+    // Alice is exactly 85m → threshold 85 must include her.
+    expect(countriesFilteredBy(combined, 85).reduce((s, c) => s + c.count, 0)).toBe(2);
+    expect(countriesFilteredBy(combined, 86).reduce((s, c) => s + c.count, 0)).toBe(1);
+  });
+
+  it("perDayCombinedFor returns one combined list per day, index-aligned", () => {
+    const input = {
+      title: "Event",
+      thresholds: [],
+      days: [
+        { sources: [processedSource(DAY1_MAIN_CSV, "Main Room")] },
+        { sources: [processedSource(DAY2_MAIN_CSV, "Main Room")] },
+      ],
+    };
+    const perDay = perDayCombinedFor(input);
+    expect(perDay).toHaveLength(2);
+    expect(perDay[0]).toHaveLength(2); // Alice + Bob
+    expect(perDay[1]).toHaveLength(1); // Carol
   });
 });

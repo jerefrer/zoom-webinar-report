@@ -2,18 +2,37 @@ import { describe, expect, it } from "vitest";
 import * as XLSX from "xlsx";
 import { parseZoomCsv } from "./parser";
 import { deduplicate } from "./processor";
-import { aggregate } from "./aggregator";
+import { aggregate, combinedFor } from "./aggregator";
 import { buildXlsx } from "./xlsx";
 import { DAY1_MAIN_CSV, DAY2_MAIN_CSV } from "./__fixtures__/sample-csvs";
 
-function aggFor(csvs: string[][]) {
-  const days = csvs.map((sources) => ({
+function daysFor(csvs: string[][]) {
+  return csvs.map((sources) => ({
     sources: sources.map((csv, i) => {
       const p = parseZoomCsv(csv);
       return { attendees: deduplicate(p.attendees), meta: p.meta, roomLabel: `Room ${i + 1}` };
     }),
   }));
-  return aggregate({ title: "Event", thresholds: [90], days });
+}
+
+function aggFor(csvs: string[][], thresholds: number[] = [90]) {
+  return aggregate({ title: "Event", thresholds, days: daysFor(csvs) });
+}
+
+/** Read the attendee count on the "Total" row of a single-day UbC sheet
+ *  (layout: "", "Total", <count>, 100). The count sits immediately right of
+ *  the "Total" label. */
+function totalOf(wb: XLSX.WorkBook, sheetName: string): number {
+  const ws = wb.Sheets[sheetName];
+  for (const ref of Object.keys(ws)) {
+    if (ref.startsWith("!")) continue;
+    if (ws[ref].v === "Total") {
+      const { r, c } = XLSX.utils.decode_cell(ref);
+      const countRef = XLSX.utils.encode_cell({ r, c: c + 1 });
+      return ws[countRef]?.v as number;
+    }
+  }
+  throw new Error(`No Total row in ${sheetName}`);
 }
 
 describe("buildXlsx", () => {
@@ -46,5 +65,51 @@ describe("buildXlsx", () => {
     const stats = aggFor([[DAY1_MAIN_CSV]]);
     const blob = buildXlsx(stats);
     expect(blob.type).toContain("openxmlformats");
+  });
+
+  // ── Regression: UbC_Nmin sheets must apply the threshold ──────────────────
+  // Day 1 attendees (Host/Panelist sections excluded by the parser):
+  //   Bob 100 min (Germany), Alice 30+55 = 85 min (France) → 2 unique.
+  // UbC (no threshold) total = 2. UbC_90min total = 1 (Alice's 85 is excluded).
+  // Before the fix, buildXlsx ignored the threshold and every UbC_Nmin sheet
+  // duplicated the unfiltered UbC list (so 90min also read 2).
+  it("applies the threshold to each UbC_Nmin sheet when combinedAttendees is provided", async () => {
+    const days = daysFor([[DAY1_MAIN_CSV]]);
+    const input = { title: "Event", thresholds: [90], days };
+    const stats = aggregate(input);
+    const combined = combinedFor(input);
+
+    const wb = XLSX.read(
+      new Uint8Array(await buildXlsx(stats, { combinedAttendees: combined }).arrayBuffer()),
+      { type: "array" },
+    );
+
+    expect(totalOf(wb, "UbC")).toBe(2);
+    expect(totalOf(wb, "UbC_90min")).toBe(1);
+    // The threshold sheet must NOT simply mirror the unfiltered list.
+    expect(totalOf(wb, "UbC_90min")).toBeLessThan(totalOf(wb, "UbC"));
+  });
+
+  it("produces distinct totals for distinct thresholds", async () => {
+    const days = daysFor([[DAY1_MAIN_CSV]]);
+    const input = { title: "Event", thresholds: [90, 110], days };
+    const stats = aggregate(input);
+    const combined = combinedFor(input);
+
+    const wb = XLSX.read(
+      new Uint8Array(await buildXlsx(stats, { combinedAttendees: combined }).arrayBuffer()),
+      { type: "array" },
+    );
+
+    expect(totalOf(wb, "UbC_90min")).toBe(1); // Bob (100)
+    expect(totalOf(wb, "UbC_110min")).toBe(0); // none (Bob's 100 excluded)
+  });
+
+  it("falls back to the unfiltered list when combinedAttendees is omitted", async () => {
+    // Documents the fallback behaviour: without attendee data the threshold
+    // cannot be applied, so the sheet mirrors UbC. (App always passes it.)
+    const stats = aggFor([[DAY1_MAIN_CSV]], [90]);
+    const wb = XLSX.read(new Uint8Array(await buildXlsx(stats).arrayBuffer()), { type: "array" });
+    expect(totalOf(wb, "UbC_90min")).toBe(totalOf(wb, "UbC"));
   });
 });

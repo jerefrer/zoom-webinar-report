@@ -1,0 +1,7 @@
+﻿Attendee Report
+Report generated time,05/20/2026 10:05:00 AM
+Topic,Webinar ID,Actual Start Time,Actual Duration (minutes),Total Users,Unique Viewers
+E2E Webinar,123 456 7890,05/13/2026 09:00:00 AM,90,1,1
+Attendee Details
+Attended,User Name (Original Name),Email,Join Time,Leave Time,Time in Session (minutes),Is Guest,Country/Region Name
+Yes,Carol,carol@example.com,05/13/2026 09:00:00 AM,05/13/2026 10:10:00 AM,70,Yes,Spain

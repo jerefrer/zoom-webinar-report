@@ -59,7 +59,8 @@ export const strings = {
     },
     panels: {
       topCountries: "Top countries",
-      moreCountries: "+%n more",
+      moreCountries: "Show all (+%n more)",
+      showLess: "Show less",
       perDay: "Per-day attendance",
       thresholds: "Engagement thresholds",
       histogram: "Engagement time distribution",

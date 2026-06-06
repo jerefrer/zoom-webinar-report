@@ -1,11 +1,13 @@
 import { Card } from "@/components/ui/card";
 import { strings } from "@/constants/strings";
+import { useChartColors } from "@/lib/useChartColors";
 import type { RetentionPoint } from "@/types/report";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 interface Props { retention?: RetentionPoint[]; }
 
 export function RetentionCurve({ retention }: Props) {
+  const c = useChartColors();
   if (!retention || retention.length === 0) return null;
   return (
     <Card className="p-5">
@@ -15,11 +17,21 @@ export function RetentionCurve({ retention }: Props) {
       <div className="h-56 w-full">
         <ResponsiveContainer>
           <LineChart data={retention}>
-            <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" />
-            <XAxis dataKey="tMinutes" stroke="hsl(var(--muted-foreground))" fontSize={12} unit=" min" />
-            <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} unit="%" domain={[0, 100]} />
-            <Tooltip />
-            <Line type="monotone" dataKey="pctRemaining" stroke="hsl(var(--primary))" strokeWidth={2.5} dot={false} />
+            <CartesianGrid stroke={c.border} strokeDasharray="3 3" />
+            <XAxis dataKey="tMinutes" stroke={c.muted} fontSize={12} unit=" min" />
+            <YAxis stroke={c.muted} fontSize={12} unit="%" domain={[0, 100]} />
+            <Tooltip
+              formatter={(value) => [`${value}%`, strings.results.panels.retention]}
+              labelFormatter={(label) => `${label} min`}
+            />
+            <Line
+              type="monotone"
+              dataKey="pctRemaining"
+              stroke={c.primary}
+              strokeWidth={2.5}
+              dot={false}
+              activeDot={{ r: 4, fill: c.primary, stroke: c.primary }}
+            />
           </LineChart>
         </ResponsiveContainer>
       </div>

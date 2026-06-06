@@ -40,10 +40,17 @@ export function ResultsView({ stats, readOnly, onStartOver, onDownload, onShare 
 
       <section className="mb-6"><TopLineStats topLine={stats.topLine} /></section>
 
-      <section className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
-        {multiDay && <PerDayChart perDay={stats.perDay!} />}
-        <CountriesPanel countries={stats.countries} />
-      </section>
+      {multiDay ? (
+        <section className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <PerDayChart perDay={stats.perDay!} />
+          <CountriesPanel countries={stats.countries} />
+        </section>
+      ) : (
+        // No per-day chart to sit beside it → let the countries list use the full width.
+        <section className="mb-6">
+          <CountriesPanel countries={stats.countries} />
+        </section>
+      )}
 
       <section className="mb-6">
         <ThresholdsPanel thresholds={stats.thresholds} />

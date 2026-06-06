@@ -1,9 +1,19 @@
-import { DndContext, type DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { useState } from "react";
+import {
+  DndContext,
+  DragOverlay,
+  type DragEndEvent,
+  type DragStartEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
 import { Button } from "@/components/ui/button";
 import { strings } from "@/constants/strings";
 import type { Bucket } from "@/lib/grouping";
 import type { Grouping } from "@/types/report";
 import { DayBucket } from "./DayBucket";
+import { FileCardOverlay } from "./FileCard";
 
 interface Props {
   grouping: Grouping;
@@ -22,8 +32,10 @@ function bucketFromId(id: string): Bucket {
 
 export function GroupingStep({ grouping, onMove, onAddDay, onRemoveFile, onBack, onNext, canNext }: Props) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+  const [activeId, setActiveId] = useState<string | null>(null);
 
   const handleDragEnd = (e: DragEndEvent) => {
+    setActiveId(null);
     if (!e.over) return;
     onMove(String(e.active.id), bucketFromId(String(e.over.id)));
   };
@@ -35,8 +47,15 @@ export function GroupingStep({ grouping, onMove, onAddDay, onRemoveFile, onBack,
         <p className="text-sm text-muted-foreground">{strings.grouping.hint}</p>
       </div>
 
-      <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <DndContext
+        sensors={sensors}
+        onDragStart={(e: DragStartEvent) => setActiveId(String(e.active.id))}
+        onDragEnd={handleDragEnd}
+        onDragCancel={() => setActiveId(null)}
+      >
+        {/* One day bucket per row so dragging between days is a natural
+            top-to-bottom motion (was a 3-up grid). */}
+        <div className="grid grid-cols-1 gap-4">
           {grouping.days.map((files, i) => (
             <DayBucket
               key={`day-${i}`}
@@ -49,11 +68,13 @@ export function GroupingStep({ grouping, onMove, onAddDay, onRemoveFile, onBack,
         </div>
 
         {grouping.unassigned.length > 0 && (
-          <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-3">
+          <div className="mt-4 rounded-lg border border-destructive/40 bg-destructive/5 p-3">
             <p className="mb-2 text-sm font-medium text-destructive">{strings.grouping.unassigned}</p>
             <DayBucket id="unassigned" label="" files={grouping.unassigned} onRemoveFile={onRemoveFile} />
           </div>
         )}
+
+        <DragOverlay>{activeId ? <FileCardOverlay filename={activeId} /> : null}</DragOverlay>
       </DndContext>
 
       <Button variant="outline" onClick={onAddDay}>{strings.grouping.addDay}</Button>

@@ -84,7 +84,7 @@ export default function App() {
         sources.push({
           attendees: deduplicate(parsed.attendees),
           meta: parsed.meta,
-          roomLabel: deriveRoomLabel(filenames[si]),
+          roomLabel: filenames.length === 1 ? "Main Room" : deriveRoomLabel(filenames[si]),
         });
       }
       if (sources.length > 0) days.push({ sources });

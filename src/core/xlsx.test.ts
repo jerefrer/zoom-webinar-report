@@ -19,7 +19,7 @@ function aggFor(csvs: string[][], thresholds: number[] = [90]) {
   return aggregate({ title: "Event", thresholds, days: daysFor(csvs) });
 }
 
-/** Read the attendee count on the "Total" row of a single-day UbC sheet
+/** Read the attendee count on the "Total" row of a single-day Users by country sheet
  *  (layout: "", "Total", <count>, 100). The count sits immediately right of
  *  the "Total" label. */
 function totalOf(wb: XLSX.WorkBook, sheetName: string): number {
@@ -42,15 +42,15 @@ describe("buildXlsx", () => {
     expect(blob).toBeInstanceOf(Blob);
     const buf = await blob.arrayBuffer();
     const wb = XLSX.read(new Uint8Array(buf), { type: "array" });
-    expect(wb.SheetNames).toEqual(["Summary", "Countries", "UbC", "UbC_90min"]);
+    expect(wb.SheetNames).toEqual(["Summary", "Countries", "Users by country", "Users by country — ≥ 90 min"]);
   });
 
-  it("multi-day workbook has the same sheets and the UbC has per-day columns", async () => {
+  it("multi-day workbook has the same sheets and the Users by country tab has per-day columns", async () => {
     const stats = aggFor([[DAY1_MAIN_CSV], [DAY2_MAIN_CSV]]);
     const blob = buildXlsx(stats);
     const wb = XLSX.read(new Uint8Array(await blob.arrayBuffer()), { type: "array" });
-    expect(wb.SheetNames).toContain("UbC");
-    const ubcSheet = wb.Sheets["UbC"];
+    expect(wb.SheetNames).toContain("Users by country");
+    const ubcSheet = wb.Sheets["Users by country"];
     // The header row (row index 4 in the layout) includes No., Country/Region Name,
     // day labels, and Total. We assert structurally rather than at specific cells.
     const headerCells = Object.keys(ubcSheet)
@@ -70,10 +70,10 @@ describe("buildXlsx", () => {
   // ── Regression: UbC_Nmin sheets must apply the threshold ──────────────────
   // Day 1 attendees (Host/Panelist sections excluded by the parser):
   //   Bob 100 min (Germany), Alice 30+55 = 85 min (France) → 2 unique.
-  // UbC (no threshold) total = 2. UbC_90min total = 1 (Alice's 85 is excluded).
-  // Before the fix, buildXlsx ignored the threshold and every UbC_Nmin sheet
-  // duplicated the unfiltered UbC list (so 90min also read 2).
-  it("applies the threshold to each UbC_Nmin sheet when combinedAttendees is provided", async () => {
+  // Users by country (no threshold) total = 2. ≥ 90 min total = 1 (Alice's 85 is excluded).
+  // Before the fix, buildXlsx ignored the threshold and every threshold sheet
+  // duplicated the unfiltered list (so 90min also read 2).
+  it("applies the threshold to each Users by country sheet when combinedAttendees is provided", async () => {
     const days = daysFor([[DAY1_MAIN_CSV]]);
     const input = { title: "Event", thresholds: [90], days };
     const stats = aggregate(input);
@@ -84,10 +84,10 @@ describe("buildXlsx", () => {
       { type: "array" },
     );
 
-    expect(totalOf(wb, "UbC")).toBe(2);
-    expect(totalOf(wb, "UbC_90min")).toBe(1);
+    expect(totalOf(wb, "Users by country")).toBe(2);
+    expect(totalOf(wb, "Users by country — ≥ 90 min")).toBe(1);
     // The threshold sheet must NOT simply mirror the unfiltered list.
-    expect(totalOf(wb, "UbC_90min")).toBeLessThan(totalOf(wb, "UbC"));
+    expect(totalOf(wb, "Users by country — ≥ 90 min")).toBeLessThan(totalOf(wb, "Users by country"));
   });
 
   it("produces distinct totals for distinct thresholds", async () => {
@@ -101,15 +101,15 @@ describe("buildXlsx", () => {
       { type: "array" },
     );
 
-    expect(totalOf(wb, "UbC_90min")).toBe(1); // Bob (100)
-    expect(totalOf(wb, "UbC_110min")).toBe(0); // none (Bob's 100 excluded)
+    expect(totalOf(wb, "Users by country — ≥ 90 min")).toBe(1); // Bob (100)
+    expect(totalOf(wb, "Users by country — ≥ 110 min")).toBe(0); // none (Bob's 100 excluded)
   });
 
   it("falls back to the unfiltered list when combinedAttendees is omitted", async () => {
     // Documents the fallback behaviour: without attendee data the threshold
-    // cannot be applied, so the sheet mirrors UbC. (App always passes it.)
+    // cannot be applied, so the sheet mirrors Users by country. (App always passes it.)
     const stats = aggFor([[DAY1_MAIN_CSV]], [90]);
     const wb = XLSX.read(new Uint8Array(await buildXlsx(stats).arrayBuffer()), { type: "array" });
-    expect(totalOf(wb, "UbC_90min")).toBe(totalOf(wb, "UbC"));
+    expect(totalOf(wb, "Users by country — ≥ 90 min")).toBe(totalOf(wb, "Users by country"));
   });
 });

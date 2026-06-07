@@ -245,7 +245,8 @@ function buildCountries(stats: AggregateStats): XLSX.WorkSheet {
   let r = 0;
 
   // Title spans A1:B3 to give the country list a clean banner
-  setCell(ws, r, 0, `Countries — ${stats.title}`, styleTitle());
+  const countriesTitle = `Countries — ${stats.title}`;
+  setCell(ws, r, 0, countriesTitle, styleTitle());
   fillMergeRange(ws, r, 0, NCOLS - 1, styleTitle());
   merges.push({ s: { r, c: 0 }, e: { r: r + 2, c: NCOLS - 1 } });
   // Fill the merge band for rows 2 and 3 too
@@ -253,7 +254,9 @@ function buildCountries(stats: AggregateStats): XLSX.WorkSheet {
     setCell(ws, band, 0, "", styleTitle());
     fillMergeRange(ws, band, 0, NCOLS - 1, styleTitle());
   }
-  heights.set(r, 50);
+  const cApproxCharsPerLine = Math.max(1, NCOLS * 12);
+  const cWrappedLines = Math.ceil(countriesTitle.length / cApproxCharsPerLine);
+  heights.set(r, Math.max(50, cWrappedLines * 30));
   heights.set(r + 1, 8);
   heights.set(r + 2, 8);
   r += 3;
@@ -281,7 +284,7 @@ function buildCountries(stats: AggregateStats): XLSX.WorkSheet {
   return ws;
 }
 
-// ─── UbC sheet (single-day or multi-day) ──────────────────────────────────
+// ─── Users by country sheet (single-day or multi-day) ─────────────────────
 
 function buildUbC(
   stats: AggregateStats,
@@ -298,7 +301,7 @@ function buildUbC(
   let r = 0;
 
   const title = threshold
-    ? `Users by country — ${stats.title} · ≥ ${threshold} minutes`
+    ? `Users by country — ${stats.title} — ≥ ${threshold} minutes`
     : `Users by country — ${stats.title}`;
 
   // Title band over A1:lastCol-3
@@ -309,7 +312,13 @@ function buildUbC(
     setCell(ws, band, 0, "", styleTitle());
     fillMergeRange(ws, band, 0, NCOLS - 1, styleTitle());
   }
-  heights.set(r, 50);
+  // Compute a generous title-row height so long titles aren't clipped.
+  // Estimate ~3.5 chars per column-width unit, multiply by NCOLS for the
+  // merged width, then derive the number of wrapped lines.
+  const approxCharsPerLine = Math.max(1, NCOLS * 12);
+  const wrappedLines = Math.ceil(title.length / approxCharsPerLine);
+  const titleRowHpx = Math.max(50, wrappedLines * 30);
+  heights.set(r, titleRowHpx);
   heights.set(r + 1, 8);
   heights.set(r + 2, 8);
   r += 3;
@@ -382,21 +391,21 @@ function buildUbC(
 // ─── Public entry ─────────────────────────────────────────────────────────
 
 /**
- * Build the formatted XLSX as a Blob ready to download. Sheet layout matches
- * the v1 Python report (Summary / Countries / UbC / UbC_Nmin), with rich
- * Zoom-blue styling (banner titles, colored headers, alternating rows,
- * generous row heights). Uses `xlsx-js-style` so styles actually persist.
+ * Build the formatted XLSX as a Blob ready to download. Sheet layout:
+ * Summary / Countries / Users by country / Users by country — ≥ Nmin,
+ * with rich Zoom-blue styling (banner titles, colored headers, alternating
+ * rows, generous row heights). Uses `xlsx-js-style` so styles persist.
  */
 export function buildXlsx(stats: AggregateStats, options: XlsxOptions = {}): Blob {
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, buildSummary(stats), "Summary");
   XLSX.utils.book_append_sheet(wb, buildCountries(stats), "Countries");
-  XLSX.utils.book_append_sheet(wb, buildUbC(stats, stats.countries, null), "UbC");
+  XLSX.utils.book_append_sheet(wb, buildUbC(stats, stats.countries, null), "Users by country");
   for (const t of stats.thresholds) {
     const filtered = options.combinedAttendees
       ? countriesFilteredBy(options.combinedAttendees, t.mins)
       : stats.countries;
-    XLSX.utils.book_append_sheet(wb, buildUbC(stats, filtered, t.mins), `UbC_${t.mins}min`);
+    XLSX.utils.book_append_sheet(wb, buildUbC(stats, filtered, t.mins), `Users by country — ≥ ${t.mins} min`);
   }
   const ab = XLSX.write(wb, { type: "array", bookType: "xlsx" }) as ArrayBuffer;
   return new Blob([ab], { type: XLSX_MIME });
